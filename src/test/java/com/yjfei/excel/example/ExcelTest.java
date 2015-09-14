@@ -20,7 +20,7 @@ public class ExcelTest {
         System.out.println(gson.toJson(result));
 
         System.out.println("----------------");
-        input = ExcelTest.class.getResourceAsStream("1.xlsx");
+        input = Thread.currentThread().getContextClassLoader().getResourceAsStream("1.xlsx");
         start = System.currentTimeMillis();
         result = ExcelParser.parse(input, 0, StudentTemplate.class, DetailStudent.class);
         cost = System.currentTimeMillis() - start;

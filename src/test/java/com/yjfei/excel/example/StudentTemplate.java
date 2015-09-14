@@ -2,6 +2,8 @@ package com.yjfei.excel.example;
 
 import java.util.Date;
 
+import javax.validation.constraints.NotNull;
+
 import org.apache.bval.constraints.Email;
 import org.apache.bval.constraints.NotEmpty;
 
@@ -18,6 +20,7 @@ public class StudentTemplate extends AbstractExcelTemplate {
     @ColumnMeta(index = 3, title = "姓名*")
     @ConvertMeta(convert = StrToString.class)
     @NotEmpty
+    @NotNull
     private String  name;
 
     @ColumnMeta(index = 4, title = "性别*")
