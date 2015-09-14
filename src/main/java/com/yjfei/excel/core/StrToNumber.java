@@ -22,8 +22,7 @@ public class StrToNumber extends AbstractConvert<String, Number> {
             Number number = df.parse(source);
             return toTarget(number);
         } catch (ParseException e) {
-            throw new RuntimeException(String.format("can not parse %s to date with pattern %s", source,
-                    meta.getFormat()));
+            throw new RuntimeException(String.format("can not parse %s to Number %s", source, e.getMessage()));
         }
     }
 

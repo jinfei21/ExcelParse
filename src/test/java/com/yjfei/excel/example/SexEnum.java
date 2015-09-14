@@ -1,9 +1,11 @@
 package com.yjfei.excel.example;
 
-public enum SexEnum {
+import java.io.Serializable;
 
-    Man("男人"),
-    Woman("女人");
+public enum SexEnum implements Serializable {
+
+    男("男"),
+    女("女");
 
     private String name;
 
@@ -11,11 +13,11 @@ public enum SexEnum {
         this.name = name;
     }
 
-    public static SexEnum getName(String name) {
+    public SexEnum getName(String name) {
         if ("男人".equals(name)) {
-            return Man;
+            return 男;
         } else {
-            return Woman;
+            return 女;
         }
     }
 }

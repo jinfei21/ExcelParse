@@ -3,10 +3,11 @@ package com.yjfei.excel.core;
 import java.lang.reflect.Method;
 
 import com.yjfei.excel.common.AbstractConvert;
+import com.yjfei.excel.util.StringUtil;
 
 public class StrToEnum extends AbstractConvert<String, Enum> {
 
-    private Method method;
+    private Method method = null;
 
     @Override
     public Enum convert(String source) {
@@ -19,8 +20,13 @@ public class StrToEnum extends AbstractConvert<String, Enum> {
             }
         }
         try {
-            return (Enum) method.invoke(null, source);
+            if (method == null) {
+                return (Enum) Enum.valueOf((Class<? extends Enum>) meta.getTargetType(), source);
+            } else {
+                return (Enum) method.invoke(null, source);
+            }
         } catch (Exception e) {
+
             e.printStackTrace();
             throw new RuntimeException(String.format("can not convert %s to enum %s by method %s.", source,
                     meta.getTargetType(), method.getName()));
@@ -31,7 +37,9 @@ public class StrToEnum extends AbstractConvert<String, Enum> {
         this.meta = convert;
 
         try {
-            method = meta.getTargetType().getMethod(meta.getFormat(), String.class);
+            if (StringUtil.isNotBlank(meta.getFormat())) {
+                method = meta.getTargetType().getMethod(meta.getFormat(), String.class);
+            }
         } catch (Throwable e) {
             e.printStackTrace();
             throw new RuntimeException(String.format(

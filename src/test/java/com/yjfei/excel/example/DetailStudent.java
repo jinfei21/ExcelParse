@@ -4,6 +4,8 @@ public class DetailStudent extends Student {
 
     private String school;
 
+    private int    age;
+
     public String getSchool() {
         return school;
     }

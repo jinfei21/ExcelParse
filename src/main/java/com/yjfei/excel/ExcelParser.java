@@ -126,15 +126,10 @@ public class ExcelParser<T> {
                 StringBuilder sb = new StringBuilder();
                 Map<String, Object> dataMap = new HashMap<String, Object>();
                 boolean paserSuccess = convertToTemplateObj(rawMap, dataMap, template, columns, sb);
-                if (!paserSuccess) {
-                    result.incrementErrorCount();
-                    result.getErrorMap().put(i, sb.toString());
-                    continue;
-                }
 
                 //验证数据列
                 Validator validator = factory.getValidator();
-                paserSuccess = true;
+
                 Set<ConstraintViolation<AbstractExcelTemplate>> constratint = validator.validate(template);
                 if (constratint != null && constratint.size() > 0) {
                     for (ConstraintViolation<AbstractExcelTemplate> cv : constratint) {
@@ -150,11 +145,14 @@ public class ExcelParser<T> {
 
                 if (paserSuccess) {
                     T dataPojo = convertToTargetObj(dataMap, targetClazz, columns, template, sb);
-                    result.getSuccessList().add(dataPojo);
-                } else {
-                    result.getErrorMap().put(i, sb.toString());
-                    result.incrementErrorCount();
+                    if (dataPojo != null) {
+                        result.getSuccessList().add(dataPojo);
+                        continue;
+                    }
                 }
+                result.getErrorMap().put(i, sb.toString());
+                result.incrementErrorCount();
+
             }
         }
 
@@ -192,7 +190,7 @@ public class ExcelParser<T> {
                     Object val = convertInfo.getConvertor().convert(srcMap.get(entry.getKey()));
                     columnInfo.getField().set(template, val);
                     dstMap.put(entry.getKey(), val);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
                     paserSuccess = false;
                     if (template.isIgnoreError()) {
@@ -220,13 +218,14 @@ public class ExcelParser<T> {
                                             StringBuilder sb) {
         T dataPojo = ReflectUtil.newInstance(targetClazz, true);
         Map<String, Field> targetFieldMap = getTemplateFactory().getClassField(targetClazz);
-
+        boolean paserSuccess = true;
         for (Entry<String, Object> entry : map.entrySet()) {
             Field targetField = targetFieldMap.get(entry.getKey());
             if (targetField != null) {
                 try {
                     targetField.set(dataPojo, entry.getValue());
                 } catch (Throwable e) {
+                    paserSuccess = false;
                     if (template.isIgnoreError()) {
                         ColumnInfo columnInfo = columns.get(entry.getKey());
                         sb.append(columnInfo.getDisplayName() + "解析报错:").append(e.getMessage()).append("\r\n");
@@ -235,6 +234,7 @@ public class ExcelParser<T> {
                     }
                 }
             } else {
+                paserSuccess = false;
                 if (template.isIgnoreError()) {
                     ColumnInfo columnInfo = columns.get(entry.getKey());
                     sb.append(columnInfo.getDisplayName() + "解析报错:").append("目标field为null").append("\r\n");
@@ -243,8 +243,11 @@ public class ExcelParser<T> {
                 }
             }
         }
-
-        return dataPojo;
+        if (paserSuccess) {
+            return dataPojo;
+        } else {
+            return null;
+        }
     }
 
     private static boolean checkTitle(Map<String, ColumnInfo> columns, Sheet sheet, AbstractExcelTemplate template) {

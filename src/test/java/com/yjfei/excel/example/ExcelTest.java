@@ -10,7 +10,7 @@ public class ExcelTest {
 
     public static void main(String args[]) throws Throwable {
 
-        InputStream input = ExcelTest.class.getResourceAsStream("1.xlsx");
+        InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("1.xlsx");
         long start = System.currentTimeMillis();
         ExcelResult<DetailStudent> result = ExcelParser.parse(input, 0, StudentTemplate.class, DetailStudent.class);
         long cost = System.currentTimeMillis() - start;

@@ -10,6 +10,7 @@ import com.yjfei.excel.common.ColumnMeta;
 import com.yjfei.excel.common.ConvertMeta;
 import com.yjfei.excel.core.StrToDate;
 import com.yjfei.excel.core.StrToEnum;
+import com.yjfei.excel.core.StrToNumber;
 import com.yjfei.excel.core.StrToString;
 
 public class StudentTemplate extends AbstractExcelTemplate {
@@ -20,7 +21,7 @@ public class StudentTemplate extends AbstractExcelTemplate {
     private String  name;
 
     @ColumnMeta(index = 4, title = "性别*")
-    @ConvertMeta(convert = StrToEnum.class, param = "getName")
+    @ConvertMeta(convert = StrToEnum.class)
     private SexEnum sex;
 
     @ColumnMeta(index = 5, title = "出生日期*")
@@ -31,6 +32,10 @@ public class StudentTemplate extends AbstractExcelTemplate {
     @ConvertMeta(convert = StrToEnum.class, param = "getName")
     @Email
     private String  email;
+
+    @ColumnMeta(index = 1, title = "姓名*")
+    @ConvertMeta(convert = StrToNumber.class)
+    private int     age;
 
     public StudentTemplate() {
         super(2, 3);
