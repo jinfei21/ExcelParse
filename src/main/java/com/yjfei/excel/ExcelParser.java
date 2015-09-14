@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -32,6 +33,7 @@ import com.yjfei.excel.core.ColumnInfo;
 import com.yjfei.excel.core.ConvertInfo;
 import com.yjfei.excel.core.DefaultTemplateFactory;
 import com.yjfei.excel.util.ReflectUtil;
+import com.yjfei.excel.util.StringUtil;
 
 public class ExcelParser<T> {
     private static Logger                 logger  = LoggerFactory.getLogger(ExcelParser.class);
@@ -100,7 +102,8 @@ public class ExcelParser<T> {
         }
 
         if (checkTitle(columns, sheet, template)) {
-            result.setTotal(rowNum);
+            result.setTotal(rowNum - template.getDataIndex());
+
             for (int i = template.getDataIndex(); i < rowNum; i++) {
                 Row dataRow = sheet.getRow(i);
                 if (null == dataRow) {
@@ -109,63 +112,20 @@ public class ExcelParser<T> {
                         result.getErrorMap().put(i, "数据为空！");
                         continue;
                     } else {
-
                         throw new RuntimeException(new String("数据行" + i + "为空！"));
                     }
                 }
-                T dataPojo = ReflectUtil.newInstance(targetClazz, true);
 
-                AbstractExcelTemplate temPojo = ReflectUtil.newInstance(templateClazz, true);
-
-                Map<String, Field> targetFieldMap = getTemplateFactory().getClassField(targetClazz);
                 //解析数据列
-                boolean paserSuccess = true;
-                StringBuilder sb = new StringBuilder();
-                for (Entry<String, ColumnInfo> entry : columns.entrySet()) {
-                    ColumnInfo columnInfo = entry.getValue();
-                    Cell cell = dataRow.getCell(columnInfo.getIndex());
-                    String strVal = getCellValue(cell);
-                    ConvertInfo convertInfo = columnInfo.getConvert();
-                    if (convertInfo != null) {
+                Map<String, String> rawMap = convertToRawMap(dataRow, columns);
 
-                        try {
-                            Object val = convertInfo.getConvertor().convert(strVal);
-
-                            columnInfo.getField().set(temPojo, val);
-                            Field targetField = targetFieldMap.get(entry.getKey());
-                            if (targetField != null) {
-                                targetField.set(dataPojo, val);
-                            } else {
-                                if (template.isIgnoreError()) {
-                                    sb.append("第" + i + "行").append(columnInfo.getDisplayName() + "解析报错:")
-                                            .append("目标field为null").append("\r\n");
-                                } else {
-                                    throw new RuntimeException(targetClazz.getName() + "的" + entry.getKey() + "为空！");
-                                }
-                            }
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            paserSuccess = false;
-                            if (template.isIgnoreError()) {
-                                sb.append("第" + i + "行").append(columnInfo.getDisplayName() + "解析报错:")
-                                        .append(e.getMessage()).append("\r\n");
-                            } else {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    } else {
-
-                        paserSuccess = false;
-                        if (template.isIgnoreError()) {
-                            sb.append(columnInfo.getDisplayName() + "解析报错:").append("转化器报错").append("\r\n");
-                        } else {
-                            throw new RuntimeException("转化器报错");
-                        }
-                    }
-
+                if (rawMap == null) {
+                    continue;
                 }
 
+                StringBuilder sb = new StringBuilder();
+                Map<String, Object> dataMap = new HashMap<String, Object>();
+                boolean paserSuccess = convertToTemplateObj(rawMap, dataMap, template, columns, sb);
                 if (!paserSuccess) {
                     result.incrementErrorCount();
                     result.getErrorMap().put(i, sb.toString());
@@ -175,7 +135,7 @@ public class ExcelParser<T> {
                 //验证数据列
                 Validator validator = factory.getValidator();
                 paserSuccess = true;
-                Set<ConstraintViolation<AbstractExcelTemplate>> constratint = validator.validate(temPojo);
+                Set<ConstraintViolation<AbstractExcelTemplate>> constratint = validator.validate(template);
                 if (constratint != null && constratint.size() > 0) {
                     for (ConstraintViolation<AbstractExcelTemplate> cv : constratint) {
                         String propName = cv.getPropertyPath().toString();
@@ -189,6 +149,7 @@ public class ExcelParser<T> {
                 }
 
                 if (paserSuccess) {
+                    T dataPojo = convertToTargetObj(dataMap, targetClazz, columns, template, sb);
                     result.getSuccessList().add(dataPojo);
                 } else {
                     result.getErrorMap().put(i, sb.toString());
@@ -197,6 +158,94 @@ public class ExcelParser<T> {
             }
         }
 
+    }
+
+    private static Map<String, String> convertToRawMap(Row dataRow, Map<String, ColumnInfo> columns) {
+        Map<String, String> rawMap = new HashMap<String, String>();
+        boolean isIncludeRow = false;
+        for (Entry<String, ColumnInfo> entry : columns.entrySet()) {
+            ColumnInfo columnInfo = entry.getValue();
+            Cell cell = dataRow.getCell(columnInfo.getIndex());
+            String strVal = getCellValue(cell);
+            if (StringUtil.isNotBlank(strVal)) {
+                isIncludeRow = true;
+                rawMap.put(entry.getKey(), strVal);
+            }
+        }
+        if (isIncludeRow) {
+            return rawMap;
+        } else {
+            return null;
+        }
+    }
+
+    private static boolean convertToTemplateObj(Map<String, String> srcMap, Map<String, Object> dstMap,
+                                                AbstractExcelTemplate template, Map<String, ColumnInfo> columns,
+                                                StringBuilder sb) {
+        boolean paserSuccess = true;
+        for (Entry<String, String> entry : srcMap.entrySet()) {
+            ColumnInfo columnInfo = columns.get(entry.getKey());
+            ConvertInfo convertInfo = columnInfo.getConvert();
+            if (convertInfo != null) {
+
+                try {
+                    Object val = convertInfo.getConvertor().convert(entry.getValue());
+
+                    columnInfo.getField().set(template, val);
+                    dstMap.put(entry.getKey(), val);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    paserSuccess = false;
+                    if (template.isIgnoreError()) {
+                        sb.append(columnInfo.getDisplayName() + "解析报错:").append(e.getMessage()).append("\r\n");
+                    } else {
+                        throw new RuntimeException(e);
+                    }
+                }
+            } else {
+
+                paserSuccess = false;
+                if (template.isIgnoreError()) {
+                    sb.append(columnInfo.getDisplayName() + "解析报错:").append("没有配置转化器").append("\r\n");
+                } else {
+                    throw new RuntimeException("转化器报错");
+                }
+            }
+
+        }
+        return paserSuccess;
+    }
+
+    private static <T> T convertToTargetObj(Map<String, Object> map, Class<? extends T> targetClazz,
+                                            Map<String, ColumnInfo> columns, AbstractExcelTemplate template,
+                                            StringBuilder sb) {
+        T dataPojo = ReflectUtil.newInstance(targetClazz, true);
+        Map<String, Field> targetFieldMap = getTemplateFactory().getClassField(targetClazz);
+
+        for (Entry<String, Object> entry : map.entrySet()) {
+            Field targetField = targetFieldMap.get(entry.getKey());
+            if (targetField != null) {
+                try {
+                    targetField.set(dataPojo, entry.getValue());
+                } catch (Throwable e) {
+                    if (template.isIgnoreError()) {
+                        ColumnInfo columnInfo = columns.get(entry.getKey());
+                        sb.append(columnInfo.getDisplayName() + "解析报错:").append(e.getMessage()).append("\r\n");
+                    } else {
+                        throw new RuntimeException(targetClazz.getName() + "的" + entry.getKey() + "为空！");
+                    }
+                }
+            } else {
+                if (template.isIgnoreError()) {
+                    ColumnInfo columnInfo = columns.get(entry.getKey());
+                    sb.append(columnInfo.getDisplayName() + "解析报错:").append("目标field为null").append("\r\n");
+                } else {
+                    throw new RuntimeException(targetClazz.getName() + "的" + entry.getKey() + "为空！");
+                }
+            }
+        }
+
+        return dataPojo;
     }
 
     private static boolean checkTitle(Map<String, ColumnInfo> columns, Sheet sheet, AbstractExcelTemplate template) {

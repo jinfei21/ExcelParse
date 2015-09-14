@@ -2,6 +2,9 @@ package com.yjfei.excel.example;
 
 import java.util.Date;
 
+import org.apache.bval.constraints.Email;
+import org.apache.bval.constraints.NotEmpty;
+
 import com.yjfei.excel.common.AbstractExcelTemplate;
 import com.yjfei.excel.common.ColumnMeta;
 import com.yjfei.excel.common.ConvertMeta;
@@ -13,6 +16,7 @@ public class StudentTemplate extends AbstractExcelTemplate {
 
     @ColumnMeta(index = 3, title = "姓名*")
     @ConvertMeta(convert = StrToString.class)
+    @NotEmpty
     private String  name;
 
     @ColumnMeta(index = 4, title = "性别*")
@@ -25,6 +29,7 @@ public class StudentTemplate extends AbstractExcelTemplate {
 
     @ColumnMeta(index = 6, title = "学校班级*")
     @ConvertMeta(convert = StrToEnum.class, param = "getName")
+    @Email
     private String  email;
 
     public StudentTemplate() {
