@@ -12,7 +12,7 @@ public class ExcelTest {
 
         InputStream input = ExcelTest.class.getResourceAsStream("1.xlsx");
         long start = System.currentTimeMillis();
-        ExcelResult<Student> result = ExcelParser.parse(input, 0, StudentTemplate.class, Student.class);
+        ExcelResult<DetailStudent> result = ExcelParser.parse(input, 0, StudentTemplate.class, DetailStudent.class);
         long cost = System.currentTimeMillis() - start;
         System.out.println("总耗时:" + cost);
         Gson gson = new Gson();
@@ -22,7 +22,7 @@ public class ExcelTest {
         System.out.println("----------------");
         input = ExcelTest.class.getResourceAsStream("1.xlsx");
         start = System.currentTimeMillis();
-        result = ExcelParser.parse(input, 0, StudentTemplate.class, Student.class);
+        result = ExcelParser.parse(input, 0, StudentTemplate.class, DetailStudent.class);
         cost = System.currentTimeMillis() - start;
         System.out.println("总耗时:" + cost);
         System.out.println(gson.toJson(result));

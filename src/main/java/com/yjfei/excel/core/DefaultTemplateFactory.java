@@ -159,8 +159,7 @@ public class DefaultTemplateFactory implements ITemplateFactory {
     private Map<String, Field> _Fields(Class<?> clazz) {
         Map<String, Field> map = new HashMap<String, Field>();
 
-        Field[] fields = clazz.getDeclaredFields();
-
+        Field[] fields = ReflectUtil.getAllField(clazz);
         for (Field field : fields) {
             if (!field.isAccessible()) {
                 field.setAccessible(true);

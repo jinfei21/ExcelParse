@@ -142,7 +142,7 @@ public class ExcelParser<T> {
                         ColumnInfo cInfo = columns.get(propName);
                         if (cInfo != null) {
                             sb.append(cInfo.getDisplayName()).append("[").append(cv.getMessage()).append("]")
-                                    .append("\n");
+                                    .append("\r\n");
                             paserSuccess = false;
                         }
                     }
@@ -183,14 +183,13 @@ public class ExcelParser<T> {
                                                 AbstractExcelTemplate template, Map<String, ColumnInfo> columns,
                                                 StringBuilder sb) {
         boolean paserSuccess = true;
-        for (Entry<String, String> entry : srcMap.entrySet()) {
-            ColumnInfo columnInfo = columns.get(entry.getKey());
+        for (Entry<String, ColumnInfo> entry : columns.entrySet()) {
+            ColumnInfo columnInfo = entry.getValue();
             ConvertInfo convertInfo = columnInfo.getConvert();
             if (convertInfo != null) {
 
                 try {
-                    Object val = convertInfo.getConvertor().convert(entry.getValue());
-
+                    Object val = convertInfo.getConvertor().convert(srcMap.get(entry.getKey()));
                     columnInfo.getField().set(template, val);
                     dstMap.put(entry.getKey(), val);
                 } catch (Exception e) {
