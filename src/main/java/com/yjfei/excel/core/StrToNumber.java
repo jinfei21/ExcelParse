@@ -7,7 +7,6 @@ import java.text.ParseException;
 import com.yjfei.excel.common.AbstractConvert;
 
 public class StrToNumber extends AbstractConvert<String, Number> {
-    private DecimalFormat df = new DecimalFormat();
 
     @Override
     public Number convert(String source) {
@@ -19,7 +18,7 @@ public class StrToNumber extends AbstractConvert<String, Number> {
             }
         }
         try {
-            Number number = df.parse(source);
+            Number number = new DecimalFormat().parse(source);
             return toTarget(number);
         } catch (ParseException e) {
             throw new RuntimeException(String.format("can not parse %s to Number %s", source, e.getMessage()));

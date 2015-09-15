@@ -28,7 +28,7 @@ public class StudentTemplate extends AbstractExcelTemplate {
     private SexEnum sex;
 
     @ColumnMeta(index = 5, title = "出生日期*")
-    @ConvertMeta(convert = StrToDate.class, param = "yyyy/dd/MM")
+    @ConvertMeta(convert = StrToDate.class, param = "yyyy/MM/dd")
     private Date    birth;
 
     @ColumnMeta(index = 6, title = "学校班级*")

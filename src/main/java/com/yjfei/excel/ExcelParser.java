@@ -4,11 +4,17 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolation;
@@ -36,12 +42,15 @@ import com.yjfei.excel.util.ReflectUtil;
 import com.yjfei.excel.util.StringUtil;
 
 public class ExcelParser<T> {
-    private static Logger                 logger  = LoggerFactory.getLogger(ExcelParser.class);
+    private static Logger                 logger     = LoggerFactory.getLogger(ExcelParser.class);
 
-    private final static ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+    private final static ValidatorFactory factory    = Validation.buildDefaultValidatorFactory();
+
+    private final static int              DATA_NUM   = 100;
 
     @Resource
     private static ITemplateFactory       templateFactory;
+    private static ExecutorService        threadPool = Executors.newCachedThreadPool();
 
     private static ITemplateFactory getTemplateFactory() {
         if (templateFactory == null) {
@@ -66,7 +75,7 @@ public class ExcelParser<T> {
         ExcelResult<T> result = new ExcelResult<T>();
         try {
             Workbook workBook = WorkbookFactory.create(input);
-            convertAndValidate(workBook, sheetIndex, templateClazz, targetClazz, result);
+            synConvertAndValidate(workBook, sheetIndex, templateClazz, targetClazz, result);
             result.setSuccess(true);
         } catch (Throwable e) {
             logger.error("parse excel pojo {} error!", e);
@@ -77,9 +86,33 @@ public class ExcelParser<T> {
         return result;
     }
 
-    private static <T> void convertAndValidate(Workbook workBook, int sheetIndex,
-                                               Class<? extends AbstractExcelTemplate> templateClazz,
-                                               Class<? extends T> targetClazz, ExcelResult<T> result) {
+    public static <T> ExcelResult<T> quickParse(InputStream input,
+                                                Class<? extends AbstractExcelTemplate> templateClazz,
+                                                Class<? extends T> targetClazz) {
+        return quickParse(input, 0, templateClazz, targetClazz);
+    }
+
+    public static <T> ExcelResult<T> quickParse(InputStream input, int sheetIndex,
+                                                Class<? extends AbstractExcelTemplate> templateClazz,
+                                                Class<? extends T> targetClazz) {
+
+        ExcelResult<T> result = new ExcelResult<T>();
+        try {
+            Workbook workBook = WorkbookFactory.create(input);
+            result = asyConvertAndValidate(workBook, sheetIndex, templateClazz, targetClazz);
+            result.setSuccess(true);
+        } catch (Throwable e) {
+            logger.error("parse excel pojo {} error!", e);
+            result.setSuccess(false);
+            result.setErrorMsg(e.getMessage());
+        }
+
+        return result;
+    }
+
+    private static <T> void synConvertAndValidate(Workbook workBook, int sheetIndex,
+                                                  Class<? extends AbstractExcelTemplate> templateClazz,
+                                                  Class<? extends T> targetClazz, ExcelResult<T> result) {
 
         Sheet sheet = workBook.getSheetAt(sheetIndex);
         int columnNum = 0;
@@ -103,59 +136,151 @@ public class ExcelParser<T> {
 
         if (checkTitle(columns, sheet, template)) {
             result.setTotal(rowNum - template.getDataIndex());
-
-            for (int i = template.getDataIndex(); i < rowNum; i++) {
-                Row dataRow = sheet.getRow(i);
-                if (null == dataRow) {
-                    result.incrementErrorCount();
-                    if (template.isIgnoreError()) {
-                        result.getErrorMap().put(i, "数据为空！");
-                        continue;
-                    } else {
-                        throw new RuntimeException(new String("数据行" + i + "为空！"));
-                    }
-                }
-
-                //解析数据列
-                Map<String, String> rawMap = convertToRawMap(dataRow, columns);
-
-                if (rawMap == null) {
-                    continue;
-                }
-
-                StringBuilder sb = new StringBuilder();
-                Map<String, Object> dataMap = new HashMap<String, Object>();
-                boolean paserSuccess = convertToTemplateObj(rawMap, dataMap, template, columns, sb);
-
-                //验证数据列
-                Validator validator = factory.getValidator();
-
-                Set<ConstraintViolation<AbstractExcelTemplate>> constratint = validator.validate(template);
-                if (constratint != null && constratint.size() > 0) {
-                    for (ConstraintViolation<AbstractExcelTemplate> cv : constratint) {
-                        String propName = cv.getPropertyPath().toString();
-                        ColumnInfo cInfo = columns.get(propName);
-                        if (cInfo != null) {
-                            sb.append(cInfo.getDisplayName()).append("[").append(cv.getMessage()).append("]")
-                                    .append("\r\n");
-                            paserSuccess = false;
-                        }
-                    }
-                }
-
-                if (paserSuccess) {
-                    T dataPojo = convertToTargetObj(dataMap, targetClazz, columns, template, sb);
-                    if (dataPojo != null) {
-                        result.getSuccessList().add(dataPojo);
-                        continue;
-                    }
-                }
-                result.getErrorMap().put(i, sb.toString());
-                result.incrementErrorCount();
-
-            }
+            parseSheetRowData(sheet, template.getDataIndex(), rowNum, template, columns, targetClazz, result);
         }
 
+    }
+
+    private static <T> ExcelResult<T> asyConvertAndValidate(Workbook workBook, int sheetIndex,
+                                                            final Class<? extends AbstractExcelTemplate> templateClazz,
+                                                            final Class<? extends T> targetClazz) {
+        ExcelResult<T> result = new ExcelResult<T>();
+        Sheet sheet = workBook.getSheetAt(sheetIndex);
+        int columnNum = 0;
+        if (sheet.getRow(0) != null) {
+            columnNum = sheet.getRow(0).getLastCellNum() - sheet.getRow(0).getFirstCellNum();
+        }
+        Map<String, ColumnInfo> columns = getTemplateFactory().getColumns(templateClazz);
+        if (columns.size() > columnNum) {
+            throw new RuntimeException("列数不正确：" + templateClazz.getName() + ",列数=" + columns.size() + ",文档列数="
+                    + columnNum);
+        }
+
+        int rowNum = sheet.getLastRowNum() + 1;//总行数
+        AbstractExcelTemplate template = getTemplateFactory().getTemplate(templateClazz);
+
+        if (rowNum == 0 || template.getDataIndex() > rowNum) {
+
+            throw new RuntimeException("行数不正确：" + templateClazz.getName() + ",数据起始行=" + template.getDataIndex()
+                    + ",文档总行数=" + rowNum);
+        }
+
+        if (checkTitle(columns, sheet, template)) {
+            result.setTotal(rowNum - template.getDataIndex());
+            List<Future<ExcelResult<T>>> list = new ArrayList<Future<ExcelResult<T>>>();
+
+            for (int i = template.getDataIndex(); i < rowNum;) {
+                int end = i + DATA_NUM;
+                if (end > rowNum) {
+                    end = rowNum;
+                }
+
+                Future<ExcelResult<T>> future = threadPool.submit(new ParseTask<T>(sheet, i, end, templateClazz,
+                        columns, targetClazz));
+
+                list.add(future);
+                i = end;
+            }
+
+            for (Future<ExcelResult<T>> future : list) {
+                try {
+                    ExcelResult<T> fResult = future.get();
+                    result.getSuccessList().addAll(fResult.getSuccessList());
+                    result.getErrorMap().putAll(fResult.getErrorMap());
+                    result.addErrorCount(fResult.getErrorCount());
+                } catch (Throwable e) {
+
+                    e.printStackTrace();
+                }
+            }
+
+        }
+
+        return result;
+    }
+
+    private static class ParseTask<T> implements Callable<ExcelResult<T>> {
+        private int                                    start;
+        private int                                    end;
+        private Sheet                                  sheet;
+        private Class<? extends AbstractExcelTemplate> templateClazz;
+        private Map<String, ColumnInfo>                columns;
+        private Class<? extends T>                     targetClazz;
+
+        public ParseTask(Sheet sheet, int start, int end, Class<? extends AbstractExcelTemplate> templateClazz,
+                         Map<String, ColumnInfo> columns, Class<? extends T> targetClazz) {
+            this.start = start;
+            this.end = end;
+            this.sheet = sheet;
+            this.templateClazz = templateClazz;
+            this.columns = columns;
+            this.targetClazz = targetClazz;
+        }
+
+        @Override
+        public ExcelResult<T> call() throws Exception {
+            ExcelResult<T> result = new ExcelResult<T>();
+            AbstractExcelTemplate template = ReflectUtil.newInstance(templateClazz, true);
+            parseSheetRowData(sheet, start, end, template, columns, targetClazz, result);
+            return result;
+        }
+
+    }
+
+    private static <T> void parseSheetRowData(Sheet sheet, int start, int end, AbstractExcelTemplate template,
+                                              Map<String, ColumnInfo> columns, Class<? extends T> targetClazz,
+                                              ExcelResult<T> result) {
+        for (int i = start; i < end; i++) {
+            Row dataRow = sheet.getRow(i);
+            if (null == dataRow) {
+                result.incrementErrorCount();
+                if (template.isIgnoreError()) {
+                    result.getErrorMap().put(i, "数据为空！");
+                    continue;
+                } else {
+                    throw new RuntimeException("数据行" + i + "为空！");
+                }
+            }
+
+            //解析数据列
+            Map<String, String> rawMap = convertToRawMap(dataRow, columns);
+
+            if (rawMap == null) {
+                continue;
+            }
+            //System.out.println(rawMap.toString());
+
+            StringBuilder sb = new StringBuilder();
+            Map<String, Object> dataMap = new HashMap<String, Object>();
+            boolean paserSuccess = convertToTemplateObj(rawMap, dataMap, template, columns, sb);
+
+            //验证数据列
+            Validator validator = factory.getValidator();
+
+            Set<ConstraintViolation<AbstractExcelTemplate>> constratint = validator.validate(template);
+            if (constratint != null && constratint.size() > 0) {
+                for (ConstraintViolation<AbstractExcelTemplate> cv : constratint) {
+                    String propName = cv.getPropertyPath().toString();
+                    ColumnInfo cInfo = columns.get(propName);
+                    if (cInfo != null) {
+                        sb.append(cInfo.getDisplayName()).append("[").append(cv.getMessage()).append("]")
+                                .append("\r\n");
+                        paserSuccess = false;
+                    }
+                }
+            }
+
+            if (paserSuccess) {
+                T dataPojo = convertToTargetObj(dataMap, targetClazz, columns, template, sb);
+                if (dataPojo != null) {
+                    result.getSuccessList().add(dataPojo);
+                    continue;
+                }
+            }
+            result.getErrorMap().put(i, sb.toString());
+            result.incrementErrorCount();
+
+        }
     }
 
     private static Map<String, String> convertToRawMap(Row dataRow, Map<String, ColumnInfo> columns) {
@@ -185,9 +310,9 @@ public class ExcelParser<T> {
             ColumnInfo columnInfo = entry.getValue();
             ConvertInfo convertInfo = columnInfo.getConvert();
             if (convertInfo != null) {
-
+                Object val = null;
                 try {
-                    Object val = convertInfo.getConvertor().convert(srcMap.get(entry.getKey()));
+                    val = convertInfo.getConvertor().convert(srcMap.get(entry.getKey()));
                     columnInfo.getField().set(template, val);
                     dstMap.put(entry.getKey(), val);
                 } catch (Throwable e) {

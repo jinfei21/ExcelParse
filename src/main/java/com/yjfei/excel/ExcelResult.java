@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ExcelResult<T> implements Serializable {
 
@@ -14,7 +15,7 @@ public class ExcelResult<T> implements Serializable {
 
     private int                  total       = 0;
 
-    private int                  errorCount  = 0;
+    private AtomicInteger        errorCount  = new AtomicInteger(0);
 
     private Map<Integer, String> errorMap    = new HashMap<Integer, String>();
 
@@ -33,11 +34,15 @@ public class ExcelResult<T> implements Serializable {
     }
 
     public void incrementErrorCount() {
-        errorCount++;
+        errorCount.incrementAndGet();
     }
 
-    public void incrementTotal() {
-        total++;
+    public int getErrorCount() {
+        return this.errorCount.get();
+    }
+
+    public void addErrorCount(int delta) {
+        errorCount.addAndGet(delta);
     }
 
     public void setSuccessList(List<T> successList) {
