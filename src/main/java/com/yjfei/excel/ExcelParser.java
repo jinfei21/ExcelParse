@@ -178,7 +178,10 @@ public class ExcelParser<T> {
 
         int rowNum = sheet.getLastRowNum() + 1;//总行数
         AbstractExcelTemplate template = getTemplateFactory().getTemplate(templateClazz);
-
+        if (rowNum > template.getMaxRow()) {
+            throw new RuntimeException("文件超过最大行数：" + templateClazz.getName() + ",最大行数=" + template.getMaxRow()
+                    + ",文档总行数=" + rowNum);
+        }
         if (rowNum == 0 || template.getDataIndex() > rowNum) {
 
             throw new RuntimeException("行数不正确：" + templateClazz.getName() + ",数据起始行=" + template.getDataIndex()
@@ -268,7 +271,6 @@ public class ExcelParser<T> {
             if (rawMap == null) {
                 continue;
             }
-            //System.out.println(rawMap.toString());
 
             StringBuilder sb = new StringBuilder();
             Map<String, Object> dataMap = new HashMap<String, Object>();

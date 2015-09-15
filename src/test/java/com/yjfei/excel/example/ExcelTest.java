@@ -13,7 +13,8 @@ public class ExcelTest {
 
         InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("1.xlsx");
         long start = System.currentTimeMillis();
-        ExcelResult<DetailStudent> result = ExcelParser.parse(input, 0, StudentTemplate.class, DetailStudent.class);
+        ExcelResult<DetailStudent> result = ExcelParser
+                .quickParse(input, 0, StudentTemplate.class, DetailStudent.class);
         long cost = System.currentTimeMillis() - start;
         System.out.println("总耗时:" + cost);
         //System.out.println(gson.toJson(result));
