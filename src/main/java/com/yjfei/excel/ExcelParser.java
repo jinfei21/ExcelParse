@@ -46,7 +46,7 @@ public class ExcelParser<T> {
 
     private final static ValidatorFactory factory    = Validation.buildDefaultValidatorFactory();
 
-    private final static int              DATA_NUM   = 100;
+    private final static int              DATA_NUM   = 200;
 
     @Resource
     private static ITemplateFactory       templateFactory;
