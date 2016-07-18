@@ -2,11 +2,11 @@ package com.yjfei.excel.common;
 
 public abstract class AbstractExcelTemplate {
 
-    private int     titleIndex; //æ ‡é¢˜æ‰€åœ¨çš„è¡Œ
-    private int     dataIndex;  //æ•°æ®æ‰€åœ¨çš„è¡Œ
-    private boolean checkTitle; //æ˜¯å¦éªŒè¯æ ‡é¢˜
-    private boolean ignoreError; //æ˜¯å¦å¿½ç•¥é”™è¯¯
-    private int     maxRow;     //å…è®¸æœ€å¤§è¡Œæ•°
+    private int     titleIndex; //±êÌâËùÔÚµÄĞĞ
+    private int     dataIndex;  //Êı¾İËùÔÚµÄĞĞ
+    private boolean checkTitle; //ÊÇ·ñÑéÖ¤±êÌâ
+    private boolean ignoreError; //ÊÇ·ñºöÂÔ´íÎó
+    private int     maxRow;     //ÔÊĞí×î´óĞĞÊı
 
     public AbstractExcelTemplate(int titleIndex, int dataIndex, boolean checkTitle, boolean ignoreError, int maxRow) {
         this.titleIndex = titleIndex;

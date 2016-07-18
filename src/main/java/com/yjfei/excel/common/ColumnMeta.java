@@ -11,13 +11,13 @@ import java.lang.annotation.Target;
 @Documented
 public @interface ColumnMeta {
 
-    /**
-     * ç´¢å¼•ä»Ž0å¼€å§‹
-     * 
-     * @return
-     */
+    
+      Ë÷Òý´Ó0¿ªÊ¼
+      
+      @return
+     
     int index();
 
-    String title() default "";
+    String title() default ;
 
 }
