@@ -1,1 +1,28 @@
-package com.yjfei.excel.example;import java.io.Serializable;public enum SexEnum implements Serializable {    鐢�("鐢�"),    濂�("濂�");    private String name;    SexEnum(String name) {        this.name = name;    }    public SexEnum getName(String name) {        if ("鐢蜂汉".equals(name)) {            return 鐢�;        } else {            return 濂�;        }    }    public static String getName(Enum sex) {        if (sex != null) {            return ((SexEnum) sex).name;        } else {            return "nan";        }    }}
+package com.yjfei.excel.example;
+
+import java.io.Serializable;
+
+public enum SexEnum implements Serializable {
+	M("man"), F("female");
+	private String name;
+
+	SexEnum(String name) {
+		this.name = name;
+	}
+
+	public SexEnum getName(String name) {      
+		if ("man".equals(name)) {        
+			return M;      
+		} else {        
+			return F;      
+		}   
+	}
+
+	public static String getName(Enum sex) {
+		if (sex != null) {
+			return ((SexEnum) sex).name;
+		} else {
+			return "nan";
+		}
+	}
+}

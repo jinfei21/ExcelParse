@@ -10,14 +10,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface ColumnMeta {
-
-    
-      索引从0开始
-      
-      @return
      
-    int index();
+    int index() default 0;
 
-    String title() default ;
+    String title() default "";
 
 }
