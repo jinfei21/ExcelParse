@@ -20,7 +20,7 @@ public class StrToEnum extends AbstractConvert<String, Enum> {
 			if (method == null) {
 				return (Enum) Enum.valueOf((Class<? extends Enum>) meta.getTargetType(), source);
 			} else {
-				return (Enum) method.invoke(null, source);
+				return (Enum) method.invoke(meta.getTargetType().newInstance(), source);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

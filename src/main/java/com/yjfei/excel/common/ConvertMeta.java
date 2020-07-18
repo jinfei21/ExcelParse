@@ -11,7 +11,7 @@ import com.yjfei.excel.core.StrToString;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface ConvertMeta {
-	/** * format鏍煎紡,濡傛棩鏈燂紝decimal锛屾鍒欒〃杈惧紡,瀵逛簬鏋氫妇鎬у垯涓鸿浆鎹㈢殑鏂规硶鍚嶃�� * * @return */
+
 	String param() default "";
 
 	Class<? extends IConvert> convert() default StrToString.class;

@@ -51,8 +51,8 @@ public class DefaultTemplateFactory implements ITemplateFactory {
 					}
 					meta.setField(field);
 					meta.setTitle(annotation.title() == null ? "" : annotation.title());
-					meta.setDisplayName(annotation.title() == null ? getColumnAlpha(annotation.index() - 1) + "鍒�"
-							: annotation.title() + "(" + getColumnAlpha(annotation.index() - 1) + "鍒�)");
+					meta.setDisplayName(annotation.title() == null ? getColumnAlpha(annotation.index()) + "列"
+							: annotation.title() + "(" + getColumnAlpha(annotation.index()) + "列)");
 					map.put(field.getName(), meta);
 				}
 			}

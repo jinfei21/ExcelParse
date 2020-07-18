@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Row {
-	int rowNo;
+	private int rowNo;
 	Map<Integer, Col> cols = new HashMap<Integer, Col>();
 
 	public int getRowNo() {

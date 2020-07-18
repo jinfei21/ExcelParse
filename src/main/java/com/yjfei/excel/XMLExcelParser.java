@@ -64,7 +64,7 @@ public class XMLExcelParser<T> {
 					input.close();
 				}
 			} catch (Exception e) {
-				logger.error("鍏抽棴娴佸け璐ャ��", e);
+				logger.error("文件关闭错误", e);
 			}
 		}
 		return result;
@@ -108,12 +108,12 @@ public class XMLExcelParser<T> {
 
 	private static boolean checkTitle(Map<String, ColumnInfo> columns, Row row, AbstractExcelTemplate template) {
 		boolean success = true;
-		StringBuilder sb = new StringBuilder("鏍囬閿欒锛�");
+		StringBuilder sb = new StringBuilder("title is error：");
 		if (template.isCheckTitle()) {
 			for (Entry<String, ColumnInfo> entry : columns.entrySet()) {
 				String titleName = row.getCols().get(entry.getValue().getIndex() + 1).getStrVal();
 				if (!entry.getValue().getTitle().equals(titleName)) {
-					sb.append(entry.getValue().getDisplayName()).append("鍚嶇О涓嶇鍚�").append("\r\n");
+					sb.append(entry.getValue().getDisplayName()).append("name is wrong").append("\r\n");
 					success = false;
 				}
 			}
@@ -127,10 +127,10 @@ public class XMLExcelParser<T> {
 	
 
 	private static <T> void parseSheetRowData(Row row, AbstractExcelTemplate template, Map<String, ColumnInfo> columns,
-			Class<? extends T> targetClazz, ExcelResult<T> result) { // 瑙ｆ瀽鏁版嵁鍒�
+			Class<? extends T> targetClazz, ExcelResult<T> result) { // 解析数据
 		StringBuilder sb = new StringBuilder();
 		Map<String, Object> dataMap = new HashMap<String, Object>();
-		boolean paserSuccess = convertToTemplateObj(row, dataMap, template, columns, sb); // 楠岃瘉鏁版嵁鍒�
+		boolean paserSuccess = convertToTemplateObj(row, dataMap, template, columns, sb); // 将行转为数据
 		Validator validator = factory.getValidator();
 		Set<ConstraintViolation<AbstractExcelTemplate>> constratint = validator.validate(template);
 		if (constratint != null && constratint.size() > 0) {
@@ -168,18 +168,18 @@ public class XMLExcelParser<T> {
 					paserSuccess = false;
 					if (template.isIgnoreError()) {
 						ColumnInfo columnInfo = columns.get(entry.getKey());
-						sb.append(columnInfo.getDisplayName() + "瑙ｆ瀽鎶ラ敊:").append(e.getMessage()).append("\r\n");
+						sb.append(columnInfo.getDisplayName() + "数据转化错误:").append(e.getMessage()).append("\r\n");
 					} else {
-						throw new RuntimeException(targetClazz.getName() + "鐨�" + entry.getKey() + "涓虹┖锛�");
+						throw new RuntimeException(targetClazz.getName() + "转化为" + entry.getKey() + "错误");
 					}
 				}
 			} else {
 				paserSuccess = false;
 				if (template.isIgnoreError()) {
 					ColumnInfo columnInfo = columns.get(entry.getKey());
-					sb.append(columnInfo.getDisplayName() + "瑙ｆ瀽鎶ラ敊:").append("鐩爣field涓簄ull").append("\r\n");
+					sb.append(columnInfo.getDisplayName() + "列名:").append("解析field错误").append("\r\n");
 				} else {
-					throw new RuntimeException(targetClazz.getName() + "鐨�" + entry.getKey() + "涓虹┖锛�");
+					throw new RuntimeException(targetClazz.getName() + "实例化" + entry.getKey() + "错误");
 				}
 			}
 		}
@@ -207,7 +207,7 @@ public class XMLExcelParser<T> {
 					e.printStackTrace();
 					paserSuccess = false;
 					if (template.isIgnoreError()) {
-						sb.append(columnInfo.getDisplayName() + "瑙ｆ瀽鎶ラ敊:").append(e.getMessage()).append("\r\n");
+						sb.append(columnInfo.getDisplayName() + "解析错误:").append(e.getMessage()).append("\r\n");
 					} else {
 						throw new RuntimeException(e);
 					}
@@ -215,9 +215,9 @@ public class XMLExcelParser<T> {
 			} else {
 				paserSuccess = false;
 				if (template.isIgnoreError()) {
-					sb.append(columnInfo.getDisplayName() + "瑙ｆ瀽鎶ラ敊:").append("娌℃湁閰嶇疆杞寲鍣�").append("\r\n");
+					sb.append(columnInfo.getDisplayName() + "解析异常:").append("\r\n");
 				} else {
-					throw new RuntimeException("杞寲鍣ㄦ姤閿�");
+					throw new RuntimeException("解析异常");
 				}
 			}
 		}
