@@ -20,18 +20,18 @@ public class ExportTemplate extends AbstractExcelTemplate {
     @NotEmpty
     @NotNull
     private String name;
-    @ColumnMeta(index = 4, title = "鎬у埆*")
+    @ColumnMeta(index = 4, title = "性别*")
     @ConvertMeta(convert = EnumToStr.class, param = "getName")
     private SexEnum sex;
-    @ColumnMeta(index = 5, title = "鍑虹敓鏃ユ湡*")
+    @ColumnMeta(index = 5, title = "出生日期*")
     @ConvertMeta(convert = DateToStr.class, param = "yyyy-MM-dd")
     private Date birth;
-    @ColumnMeta(index = 6, title = "瀛︽牎鐝骇*")
+    @ColumnMeta(index = 6, title = "学校班级*")
     @ConvertMeta(convert = EnumToStr.class, param = "getName")
     @Email
-    @Money(message = "涓嶆槸閽�")
+    @Money(message = "不能为空")
     private String email;
-    @ColumnMeta(index = 1, title = "濮撳悕*")
+    @ColumnMeta(index = 1, title = "姓名*")
     @ConvertMeta(convert = NumberToStr.class)
     private int age;
 
