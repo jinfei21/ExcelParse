@@ -75,15 +75,13 @@ public class ExcelParser<T> {
         return templateFactory;
     }
 
-    public static <T> OutputStream export(Class<? extends AbstractExcelTemplate> templateClazz, Collection<T> datas)
-            throws IOException,
-
-            IntrospectionException {
+    public static <T> OutputStream export(Class<? extends AbstractExcelTemplate> templateClazz, Collection<T> datas,OutputStream output)
+            throws IOException, IntrospectionException {
 
         ExcelResult<T> result = new ExcelResult<T>();
         Map<String, ColumnInfo> columns = getTemplateFactory().getColumns(templateClazz);
         if (columns.size() == 0) {
-            throw new RuntimeException("鍒楁暟涓虹┖锛�");
+            throw new RuntimeException("导出数据为空");
         }
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet("data");
@@ -158,8 +156,7 @@ public class ExcelParser<T> {
                 }
             }
         }
-        // OutputStream output = new ByteArrayOutputStream();
-        OutputStream output = new FileOutputStream("e:\\test.xlsx");
+
         workbook.write(output);
         return output;
     }

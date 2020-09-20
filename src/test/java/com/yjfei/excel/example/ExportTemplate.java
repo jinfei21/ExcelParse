@@ -15,7 +15,7 @@ import com.yjfei.excel.core.StrToString;
 import com.yjfei.excel.rule.Money;
 
 public class ExportTemplate extends AbstractExcelTemplate {
-    @ColumnMeta(index = 3, title = "濮撳悕*")
+    @ColumnMeta(index = 3, title = "姓名*")
     @ConvertMeta(convert = StrToString.class)
     @NotEmpty
     @NotNull

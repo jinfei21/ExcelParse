@@ -1,6 +1,7 @@
 package com.yjfei.excel.example;
 
 import java.beans.IntrospectionException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -15,7 +16,9 @@ public class ExportTest {
         list.add(new DetailStudent("1", SexEnum.M, new Date(), "gets"));
         list.add(new DetailStudent("1", SexEnum.M, new Date(), "gets"));
         list.add(new DetailStudent("1", SexEnum.M, new Date(), "gets"));
-        OutputStream output = ExcelParser.export(ExportTemplate.class, list);
+        // OutputStream output = new ByteArrayOutputStream();
+        //OutputStream output = new FileOutputStream("e:\\test.xlsx");
+        OutputStream output = ExcelParser.export(ExportTemplate.class, list,new FileOutputStream("e:\\test.xlsx"));
         output.flush();
         output.close();
     }
