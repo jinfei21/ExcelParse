@@ -114,7 +114,7 @@ public class ExcelParser<T> {
         AbstractExcelTemplate template = getTemplateFactory().getTemplate(templateClazz);
         HSSFRow titleRow = sheet.createRow(template.getTitleIndex());
         for (ColumnInfo column : columns.values()) {
-            HSSFCell cell = titleRow.createCell(column.getIndex() - 1);
+            HSSFCell cell = titleRow.createCell(column.getIndex());
             cell.setCellStyle(titleStyle);
             HSSFRichTextString text = new HSSFRichTextString(column.getTitle());
             cell.setCellValue(text);
@@ -140,14 +140,14 @@ public class ExcelParser<T> {
                         Object val = null;
                         try {
                             val = convertInfo.getConvertor().convert(value);
-                            HSSFCell cell = dataRow.createCell(column.getIndex() - 1);
+                            HSSFCell cell = dataRow.createCell(column.getIndex());
                             cell.setCellStyle(dataStyle);
                             cell.setCellValue(String.valueOf(val));
                         } catch (Throwable e) {
                             e.printStackTrace();
                         }
                     } else {
-                        HSSFCell cell = dataRow.createCell(column.getIndex() - 1);
+                        HSSFCell cell = dataRow.createCell(column.getIndex());
                         cell.setCellStyle(dataStyle);
                         cell.setCellValue(String.valueOf(value));
                     }
